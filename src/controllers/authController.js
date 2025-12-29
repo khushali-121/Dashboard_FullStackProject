@@ -89,3 +89,22 @@ exports.resetPassword = async (req, res) => {
 
   res.json({ message: "Password reset successful" });
 };
+
+
+exports.changePassword = async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  const admin = await Admin.findById(req.admin.id);
+
+  // old password verify
+  const isMatch = await bcrypt.compare(oldPassword, admin.password);
+  if (!isMatch) {
+    return res.status(400).json({ message: "Old password incorrect" });
+  }
+
+  // new password set
+  admin.password = await bcrypt.hash(newPassword, 10);
+  await admin.save();
+
+  res.json({ message: "Password changed successfully" });
+};

@@ -56,9 +56,18 @@ exports.deleteProgram = async (req, res) => {
  */
 exports.programStats = async (req, res) => {
   try {
-    const total = await UniversityProgram.countDocuments();
+    const { university } = req.query;
+
+    let matchStage = {};
+
+    if (university) {
+      matchStage.university = university;
+    }
+
+    const total = await UniversityProgram.countDocuments(matchStage);
 
     const stats = await UniversityProgram.aggregate([
+      { $match: matchStage },  
       {
         $group: {
           _id: "$status",

@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const universityProgramSchema = new mongoose.Schema({
   university: String,
-  program: String,
+  programs: String,
   currentStatus: String,
   issues: String,
   proposedAction: String,
