@@ -77,8 +77,9 @@ exports.forgotPassword = async (req, res) => {
     admin.otpExpiry = Date.now() + 10 * 60 * 1000;
     await admin.save();
 
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+    const sendMail = require("../config/mail");
+
+    await sendMail({
       to: admin.email,
       subject: "OTP for Password Reset",
       text: `Your OTP is ${otp}`
