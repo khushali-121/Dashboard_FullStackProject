@@ -1,7 +1,8 @@
 const Admin = require("../models/Admin");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const transporter = require("../config/mail");
+const otpEmailTemplate = require("../utils/otpEmailTemplate");
+
 
 /**
  * REGISTER
@@ -71,10 +72,17 @@ exports.forgotPassword = async (req, res) => {
       return res.status(404).json({ message: "Admin not found" });
     }
 
+     // prevent multiple OTP spam
+    if (admin.otpExpiry && admin.otpExpiry > Date.now()) {
+      return res.json({
+        message: "OTP already sent. Please wait 2 minutesbefore requesting again."
+      });
+    }
+
     const otp = Math.floor(100000 + Math.random() * 900000);
 
     admin.otp = otp;
-    admin.otpExpiry = Date.now() + 10 * 60 * 1000;
+    admin.otpExpiry = Date.now() + 2 * 60 * 1000;
     await admin.save();
 
     const sendMail = require("../config/mail");
@@ -82,6 +90,7 @@ exports.forgotPassword = async (req, res) => {
     await sendMail({
       to: admin.email,
       subject: "OTP for Password Reset",
+      html: otpEmailTemplate(otp),
       text: `Your OTP is ${otp}`
     });
 
