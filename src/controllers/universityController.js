@@ -9,26 +9,80 @@ exports.createProgram = async (req, res) => {
 };
 
 /**
- * READ (with search + filters)
+ * READ (Search + Status + Date Filters)
  */
 exports.getPrograms = async (req, res) => {
-  const { status, university, search } = req.query;
+  try {
+    const {
+      search,
+      status,
+      university,
+      dateFilter,   // today | week | month | custom
+      startDate,    // for custom range
+      endDate
+    } = req.query;
 
-  let query = {};
+    let query = {};
 
-  if (status) query.status = status;
-  if (university) query.university = university;
+    /* ---------------- STATUS FILTER ---------------- */
+    if (status && status !== "All") {
+      query.status = status;
+    }
 
-  if (search) {
-    query.$or = [
-      { university: new RegExp(search, "i") },
-      { program: new RegExp(search, "i") },
-      { responsiblePerson: new RegExp(search, "i") }
-    ];
+    /* ---------------- UNIVERSITY FILTER ---------------- */
+    if (university) {
+      query.university = university;
+    }
+
+    /* ---------------- SEARCH FILTER ---------------- */
+    if (search) {
+      query.$or = [
+        { university: { $regex: search, $options: "i" } },
+        { program: { $regex: search, $options: "i" } },
+        { responsiblePerson: { $regex: search, $options: "i" } }
+      ];
+    }
+
+    /* ---------------- DATE FILTER ---------------- */
+    if (dateFilter) {
+      const now = new Date();
+      let fromDate;
+
+      if (dateFilter === "today") {
+        fromDate = new Date(now.setHours(0, 0, 0, 0));
+        query.createdAt = { $gte: fromDate };
+      }
+
+      if (dateFilter === "week") {
+        fromDate = new Date();
+        fromDate.setDate(fromDate.getDate() - 7);
+        query.createdAt = { $gte: fromDate };
+      }
+
+      if (dateFilter === "month") {
+        fromDate = new Date();
+        fromDate.setMonth(fromDate.getMonth() - 1);
+        query.createdAt = { $gte: fromDate };
+      }
+
+      if (dateFilter === "custom" && startDate && endDate) {
+        query.createdAt = {
+          $gte: new Date(startDate),
+          $lte: new Date(endDate)
+        };
+      }
+    }
+
+    const programs = await UniversityProgram
+      .find(query)
+      .sort({ createdAt: -1 });
+
+    res.json(programs);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch programs" });
   }
-
-  const programs = await UniversityProgram.find(query).sort({ createdAt: -1 });
-  res.json(programs);
 };
 
 /**
