@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const universityProgramSchema = new mongoose.Schema({
   university: String,
   programs: String,
-  currentStatus: String,
+  batch: String,
   issues: String,
   proposedAction: String,
   responsiblePerson: String,

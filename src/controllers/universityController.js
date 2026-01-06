@@ -108,6 +108,37 @@ exports.deleteProgram = async (req, res) => {
 };
 
 /**
+ * BULK DELETE
+ */
+exports.deleteMultiplePrograms = async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        message: "ids array is required"
+      });
+    }
+
+    const result = await UniversityProgram.deleteMany({
+      _id: { $in: ids }
+    });
+
+    res.json({
+      message: "Programs deleted successfully",
+      deletedCount: result.deletedCount
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Bulk delete failed"
+    });
+  }
+};
+
+
+/**
  * PIE CHART CALCULATION (Overview Page)
  */
 exports.programStats = async (req, res) => {
