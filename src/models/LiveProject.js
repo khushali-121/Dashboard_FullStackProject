@@ -21,8 +21,8 @@ const liveProjectSchema = new mongoose.Schema({
 
   certificate: { type: Boolean, default: false },
 
-  startDate: { type: Date, required: true },
-  endDate: { type: Date, required: true }
+  startDate: { type: Date, default: null },
+  endDate: { type: Date, default: null }
 
 }, { timestamps: true });
 
