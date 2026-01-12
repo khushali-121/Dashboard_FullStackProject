@@ -22,29 +22,97 @@ exports.createProject = async (req, res) => {
   }
 };
 
+// SUMMARY/DASHBOARD
+exports.getLiveProjectSummary = async (req, res) => {
+  try {
+    const total = await LiveProject.countDocuments();
+
+    const running = await LiveProject.countDocuments({ status: "Running" });
+    const completed = await LiveProject.countDocuments({ status: "Completed" });
+
+    const certificatesDistributed = await LiveProject.countDocuments({ certificate: true });
+    const certificatesPending = await LiveProject.countDocuments({ certificate: false });
+
+    res.json({
+      totalProjects: total,
+      runningProjects: running,
+      completedProjects: completed,
+      certificates: {
+        distributed: certificatesDistributed,
+        pending: certificatesPending
+      }
+    });
+
+  } catch (err) {
+    console.error("SUMMARY ERROR:", err);
+    res.status(500).json({ message: "Failed to load summary" });
+  }
+};
+
+exports.getLiveProjectFilters = async (req, res) => {
+  try {
+    const universities = await LiveProject.distinct("university");
+    const programs = await LiveProject.distinct("program");
+    const batches = await LiveProject.distinct("batch");
+    const groups = await LiveProject.distinct("group");
+    const statuses = await LiveProject.distinct("status");
+
+    res.json({
+      universities,
+      programs,
+      batches,
+      groups,
+      statuses
+    });
+
+  } catch (err) {
+    console.error("FILTER ERROR:", err);
+    res.status(500).json({ message: "Failed to load filters" });
+  }
+};
+
 
 // GET ALL + FILTER
 exports.getProjects = async (req, res) => {
   try {
-    const { university, program, batch, status, search } = req.query;
+    const {
+      university,
+      program,
+      batch,
+      group,
+      status,
+      search
+    } = req.query;
 
     let query = {};
+
     if (university) query.university = university;
     if (program) query.program = program;
     if (batch) query.batch = batch;
+    if (group) query.group = group;
     if (status) query.status = status;
 
     if (search) {
-      query.projectTitle = new RegExp(search, "i");
+      query.$or = [
+        { university: new RegExp(search, "i") },
+        { program: new RegExp(search, "i") },
+        { batch: new RegExp(search, "i") },
+        { group: new RegExp(search, "i") },
+        { projectTitle: new RegExp(search, "i") },
+        { facultyCoordinator: new RegExp(search, "i") },
+        { industryExpert: new RegExp(search, "i") }
+      ];
     }
 
     const projects = await LiveProject.find(query).sort({ createdAt: -1 });
     res.json(projects);
+
   } catch (err) {
     console.error("FETCH ERROR:", err);
     res.status(500).json({ message: "Fetch failed" });
   }
 };
+
 
 // GET BY ID
 exports.getProjectById = async (req, res) => {
