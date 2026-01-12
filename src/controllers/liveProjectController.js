@@ -1,14 +1,27 @@
 const LiveProject = require("../models/LiveProject");
 
-// CREATE
 exports.createProject = async (req, res) => {
   try {
-    const project = await LiveProject.create(req.body);
+    const {
+      studentCount,
+      certificateDistributed,
+      ...rest
+    } = req.body;
+
+    const payload = {
+      ...rest,
+      studentsCount: Number(studentCount),
+      certificate: certificateDistributed === "Yes"
+    };
+
+    const project = await LiveProject.create(payload);
     res.status(201).json(project);
   } catch (err) {
+    console.error("CREATE PROJECT ERROR:", err);
     res.status(500).json({ message: "Create failed" });
   }
 };
+
 
 // GET ALL + FILTER
 exports.getProjects = async (req, res) => {
@@ -25,9 +38,10 @@ exports.getProjects = async (req, res) => {
       query.projectTitle = new RegExp(search, "i");
     }
 
-    const projects = await LiveProject.find(query);
+    const projects = await LiveProject.find(query).sort({ createdAt: -1 });
     res.json(projects);
-  } catch {
+  } catch (err) {
+    console.error("FETCH ERROR:", err);
     res.status(500).json({ message: "Fetch failed" });
   }
 };
@@ -45,12 +59,23 @@ exports.getProjectById = async (req, res) => {
 
 // UPDATE
 exports.updateProject = async (req, res) => {
-  const project = await LiveProject.findByIdAndUpdate(
-    req.params.id,
-    req.body,
-    { new: true }
-  );
-  res.json(project);
+  try {
+    const payload = {
+      ...req.body,
+      studentsCount: req.body.studentCount,
+      certificate: req.body.certificateDistributed === "Yes"
+    };
+
+    const project = await LiveProject.findByIdAndUpdate(
+      req.params.id,
+      payload,
+      { new: true }
+    );
+
+    res.json(project);
+  } catch (err) {
+    res.status(500).json({ message: "Update failed" });
+  }
 };
 
 // DELETE
@@ -59,7 +84,7 @@ exports.deleteProject = async (req, res) => {
   res.json({ message: "Deleted" });
 };
 
-// DASHBOARD STATS (MISSING FUNCTION – ROOT CAUSE)
+// DASHBOARD STATS
 exports.projectStats = async (req, res) => {
   try {
     const total = await LiveProject.countDocuments();
